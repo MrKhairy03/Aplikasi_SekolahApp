@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Siswa;
 use App\Models\User;
 use App\Models\Kelas;
+use App\Models\Orangtua;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-class SiswaController extends Controller
+class OrangtuaController extends Controller
 {
-    private string $draftKey = 'siswa_create_draft';
+    private string $draftKey = 'orangtua_create_draft';
 
     public function index()
     {
-        $siswa = Siswa::with(['user', 'kelas', 'orangTua'])
+        $orangtua = Orangtua::with(['user', 'siswa'])
             ->latest()
             ->get();
 
-        return view('environments.siswa.content', compact('siswa'));
+        return view('environments.orangtua.content', compact('orangtua'));
     }
 
     public function create(Request $request)
@@ -27,18 +28,18 @@ class SiswaController extends Controller
         $step = (int) $request->query('step', 1);
         $step = in_array($step, [1, 2], true) ? $step : 1;
 
-        $siswa = new Siswa();
-        $kelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $orangtua = new orangtua();
+        $siswa = Siswa::orderBy('kelas_id')->orderBy('nis')->get();
         $draft = session($this->draftKey);
 
         if ($step === 2 && empty($draft)) {
-            return redirect()->route('siswa.tambah', ['step' => 1])
+            return redirect()->route('orangtua.tambah', ['step' => 1])
                 ->with('error', 'Silakan isi Step 1 terlebih dahulu.');
         }
 
-        return view('environments.siswa-form.content', compact(
+        return view('environments.orangtua-form.content', compact(
+            'orangtua',
             'siswa',
-            'kelas',
             'step',
             'draft'
         ));
@@ -63,23 +64,21 @@ class SiswaController extends Controller
                 ],
             ]);
 
-            return redirect()->route('siswa.tambah', ['step' => 2])
+            return redirect()->route('orangtua.tambah', ['step' => 2])
                 ->with('success', 'Step 1 tersimpan. Lanjutkan ke Step 2.');
         }
 
         $draft = session($this->draftKey);
         if (empty($draft)) {
-            return redirect()->route('siswa.tambah', ['step' => 1])
+            return redirect()->route('orangtua.tambah', ['step' => 1])
                 ->with('error', 'Draft Step 1 tidak ditemukan.');
         }
 
         $validated = $request->validate([
-            'kelas_id'       => ['required', 'exists:kelas,id'],
-            'nis'            => ['required', 'string', 'max:50', 'unique:siswa,nis'],
+            'siswa_id'       => ['required', 'exists:siswa,id'],
+            'nik'            => ['required', 'string', 'max:50', 'unique:orang_tua,nik'],
             'jenis_kelamin'  => ['required', 'in:L,P'],
-            'tanggal_lahir'  => ['nullable', 'date'],
             'alamat'         => ['nullable', 'string'],
-            'status'         => ['required', 'in:aktif,nonaktif'],
         ]);
 
         DB::transaction(function () use ($draft, $validated) {
@@ -89,96 +88,89 @@ class SiswaController extends Controller
                 'password' => Hash::make($draft['password']),
             ]);
 
-            Siswa::create([
+            orangtua::create([
                 'user_id'        => $user->id,
-                'kelas_id'       => $validated['kelas_id'],
-                'nis'            => $validated['nis'],
+                'siswa_id'       => $validated['siswa_id'],
+                'nik'            => $validated['nik'],
                 'jenis_kelamin'  => $validated['jenis_kelamin'],
-                'tanggal_lahir'  => $validated['tanggal_lahir'] ?? null,
                 'alamat'         => $validated['alamat'] ?? null,
-                'status'         => $validated['status'],
             ]);
         });
 
         session()->forget($this->draftKey);
 
-        return redirect()->route('siswa.index')
-            ->with('success', 'Data siswa berhasil ditambahkan.');
+        return redirect()->route('orangtua.index')
+            ->with('success', 'Data orangtua berhasil ditambahkan.');
     }
 
-    public function edit(Request $request, Siswa $siswa)
+    public function edit(Request $request, orangtua $orangtua)
     {
-        $siswa->load(['user', 'kelas']);
+        $orangtua->load(['user', 'siswa']);
 
         $step = (int) $request->query('step', 1);
         $step = in_array($step, [1, 2], true) ? $step : 1;
 
-        $kelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $siswa = Siswa::orderBy('kelas_id')->orderBy('nis')->get();
         $draft = null;
 
-        return view('environments.siswa-form.content', compact(
+        return view('environments.orangtua-form.content', compact(
+            'orangtua',
             'siswa',
-            'kelas',
             'step',
             'draft'
         ));
     }
 
-    public function update(Request $request, Siswa $siswa)
+    public function update(Request $request, orangtua $orangtua)
     {
-        $siswa->load('user');
+        $orangtua->load('user');
 
         $validated = $request->validate([
             'name'           => ['required', 'string', 'max:255'],
-            'email'          => ['required', 'email', 'max:255', 'unique:users,email,' . $siswa->user_id],
-
-            'kelas_id'       => ['required', 'exists:kelas,id'],
-            'nis'            => ['required', 'string', 'max:50', 'unique:siswa,nis,' . $siswa->id],
+            'email'          => ['required', 'email', 'max:255', 'unique:users,email,' . $orangtua->user_id],
+            'siswa_id'       => ['required', 'exists:siswa,id'],
+            'nik'            => ['required', 'string', 'max:50', 'unique:orang_tua,nik,' . $orangtua->id],
             'jenis_kelamin'  => ['required', 'in:L,P'],
-            'tanggal_lahir'  => ['nullable', 'date'],
             'alamat'         => ['nullable', 'string'],
-            'status'         => ['required', 'in:aktif,nonaktif'],
         ]);
 
-        DB::transaction(function () use ($validated, $siswa) {
-            $siswa->user->update([
+        DB::transaction(function () use ($validated, $orangtua) {
+            $orangtua->user->update([
                 'name'  => $validated['name'],
                 'email' => $validated['email'],
             ]);
 
-            $siswa->update([
-                'kelas_id'      => $validated['kelas_id'],
-                'nis'           => $validated['nis'],
+            $orangtua->update([
+                'siswa_id'      => $validated['siswa_id'],
+                'nik'           => $validated['nik'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
-                'tanggal_lahir' => $validated['tanggal_lahir'] ?? null,
                 'alamat'        => $validated['alamat'] ?? null,
-                'status'        => $validated['status'],
             ]);
         });
 
-        return redirect()->route('siswa.index')
-            ->with('success', 'Data siswa berhasil diperbarui.');
+        return redirect()->route('orangtua.index')
+            ->with('success', 'Data orangtua berhasil diperbarui.');
     }
 
-    public function destroy(Siswa $siswa)
+    public function destroy(orangtua $orangtua)
     {
-        DB::transaction(function () use ($siswa) {
-            $user = $siswa->user;
-            $siswa->delete();
+        DB::transaction(function () use ($orangtua) {
+            $user = $orangtua->user;
+            $orangtua->delete();
             if ($user) {
                 $user->delete();
             }
         });
 
-        return redirect()->route('siswa.index')
-            ->with('success', 'Data siswa berhasil dihapus.');
+        return redirect()->route('orangtua.index')
+            ->with('success', 'Data orangtua berhasil dihapus.');
     }
 
     public function cancelDraft()
     {
         session()->forget($this->draftKey);
 
-        return redirect()->route('siswa.index')
-            ->with('success', 'Input siswa dibatalkan.');
+        return redirect()->route('orangtua.index')
+            ->with('success', 'Input orangtua dibatalkan.');
     }
 }

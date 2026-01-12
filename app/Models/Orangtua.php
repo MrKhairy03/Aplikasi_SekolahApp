@@ -6,18 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Kelas;
 
-class Siswa extends Model
+class Orangtua extends Model
 {
-    protected $table = 'siswa';
+    protected $table = 'orang_tua';
 
     protected $fillable = [
         'user_id',
-        'kelas_id',
-        'nis',
+        'siswa_id',
+        'nik',
         'jenis_kelamin',
         'tanggal_lahir',
         'alamat',
-        'status',
     ];
 
     public function user()
@@ -25,13 +24,8 @@ class Siswa extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function kelas()
+    public function siswa()
     {
-        return $this->belongsTo(Kelas::class);
-    }
-
-    public function orangTua()
-    {
-        return $this->hasOne(Orangtua::class);
+        return $this->belongsTo(Siswa::class);
     }
 }

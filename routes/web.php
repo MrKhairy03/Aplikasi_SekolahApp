@@ -5,6 +5,7 @@ use App\Http\Controllers\GuruController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\OrangtuaController;
 use App\Http\Controllers\DashboardController;
 
 
@@ -41,6 +42,14 @@ Route::middleware('auth')->group(function () {
     Route::put('/guru/{guru}', [guruController::class, 'update'])->name('guru.update');
     Route::delete('/guru/{guru}', [guruController::class, 'destroy'])->name('guru.destroy');
     Route::post('/guru/batal', [guruController::class, 'cancelDraft'])->name('guru.cancel');
+
+    Route::get('/orangtua', [OrangtuaController::class, 'index'])->name('orangtua.index');
+    Route::get('/orangtua/tambah', [OrangtuaController::class, 'create'])->name('orangtua.tambah');
+    Route::post('/orangtua', [OrangtuaController::class, 'store'])->name('orangtua.store');
+    Route::get('/orangtua/edit/{orangtua}', [OrangtuaController::class, 'edit'])->name('orangtua.edit');
+    Route::put('/orangtua/{orangtua}', [OrangtuaController::class, 'update'])->name('orangtua.update');
+    Route::delete('/orangtua/{orangtua}', [OrangtuaController::class, 'destroy'])->name('orangtua.destroy');
+    Route::post('/orangtua/batal', [OrangtuaController::class, 'cancelDraft'])->name('orangtua.cancel');
 
     Route::get('/laporan/siswa-per-kelas', [LaporanController::class, 'siswaPerKelas'])->name('laporan.siswa');
     Route::get('/laporan/guru-per-kelas', [LaporanController::class, 'guruPerKelas'])->name('laporan.guru');

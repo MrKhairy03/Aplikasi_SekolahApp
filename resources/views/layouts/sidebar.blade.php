@@ -44,6 +44,13 @@
         </a>
     </li>
 
+    <li class="nav-item {{ request()->routeIs('orangtua.*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('orangtua.index') }}">
+            <i class="fas fa-fw fa-chalkboard-teacher"></i>
+            <span>Data Orangtua</span>
+        </a>
+    </li>
+
     <hr class="sidebar-divider">
 
     <div class="sidebar-heading">
